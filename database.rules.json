@@ -1,0 +1,23 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "$uid === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin'",
+        ".write": "$uid === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin'"
+      }
+    },
+    "modules": {
+      ".read": "auth != null",
+      ".write": "root.child('users').child(auth.uid).child('role').val() === 'facilitator' || root.child('users').child(auth.uid).child('role').val() === 'admin'"
+    },
+    "tests": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "grades": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}
+

@@ -1,0 +1,27 @@
+{
+  "name": "onlinetrack-educational-platform",
+  "version": "1.0.0",
+  "description": "A comprehensive web-based educational system with Firebase backend",
+  "main": "index.html",
+  "scripts": {
+    "start": "firebase serve",
+    "deploy": "firebase deploy"
+  },
+  "keywords": [
+    "education",
+    "learning",
+    "firebase",
+    "student-management",
+    "online-learning"
+  ],
+  "author": "OnlineTrack Team",
+  "license": "MIT",
+  "dependencies": {
+    "firebase": "^10.7.1",
+    "chart.js": "^4.4.0"
+  },
+  "devDependencies": {
+    "firebase-tools": "^13.0.0"
+  }
+}
+

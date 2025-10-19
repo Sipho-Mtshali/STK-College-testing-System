@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Google Sign-In</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        button {
+            background: #4285f4;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover { background: #357ae8; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #007bff; }
+        .step {
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 3px solid #ccc;
+        }
+        .step.success { border-left-color: #28a745; background: #d4edda; }
+        .step.error { border-left-color: #dc3545; background: #f8d7da; }
+        .step.info { border-left-color: #007bff; background: #d1ecf1; }
+    </style>
+</head>
+<body>
+    <div class="test-box">
+        <h1>🔍 Google Sign-In Diagnostic Tool</h1>
+        <p>This page will help diagnose your Google Sign-In issue.</p>
+        
+        <button onclick="testGoogleSignIn()">
+            🔐 Test Google Sign-In
+        </button>
+        
+        <button onclick="clearLog()">
+            🗑️ Clear Log
+        </button>
+        
+        <div id="log" class="log">
+            <div class="step info">Click "Test Google Sign-In" button above to start diagnosis...</div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC8m_iv91L2EUEc6Xsg5DJHGWTdfUcxGZY",
+            authDomain: "edutech-system.firebaseapp.com",
+            projectId: "edutech-system",
+            storageBucket: "edutech-system.firebasestorage.app",
+            messagingSenderId: "1072073327476",
+            appId: "1:1072073327476:web:5fdd0c76218a3a772ca221",
+            measurementId: "G-6M9540ZEPE"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        const logDiv = document.getElementById('log');
+        
+        function addLog(message, type = 'info') {
+            const step = document.createElement('div');
+            step.className = `step ${type}`;
+            step.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            logDiv.appendChild(step);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            logDiv.innerHTML = '<div class="step info">Log cleared. Ready for new test...</div>';
+        }
+        
+        async function testGoogleSignIn() {
+            clearLog();
+            addLog('🚀 Starting Google Sign-In diagnostic...', 'info');
+            
+            try {
+                // Step 1: Check Firebase connection
+                addLog('✓ Step 1: Checking Firebase connection...', 'info');
+                addLog(`✓ Firebase initialized with project: ${firebaseConfig.projectId}`, 'success');
+                
+                // Step 2: Initiate Google Sign-In
+                addLog('✓ Step 2: Initiating Google Sign-In popup...', 'info');
+                const provider = new firebase.auth.GoogleAuthProvider();
+                
+                const result = await auth.signInWithPopup(provider);
+                const user = result.user;
+                
+                addLog(`✓ Step 3: Google Sign-In successful!`, 'success');
+                addLog(`   ├─ User ID: ${user.uid}`, 'success');
+                addLog(`   ├─ Email: ${user.email}`, 'success');
+                addLog(`   └─ Name: ${user.displayName}`, 'success');
+                
+                // Step 4: Check if user document exists
+                addLog('✓ Step 4: Checking Firestore for user document...', 'info');
+                
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    addLog(`✓ Step 5: User document FOUND in Firestore!`, 'success');
+                    addLog(`   ├─ Name: ${userData.name}`, 'success');
+                    addLog(`   ├─ Email: ${userData.email}`, 'success');
+                    addLog(`   ├─ Role: ${userData.role}`, 'success');
+                    addLog(`   └─ User ID: ${userData.userId}`, 'success');
+                    
+                    // Test update permission
+                    addLog('✓ Step 6: Testing update permission...', 'info');
+                    try {
+                        await db.collection('users').doc(user.uid).update({
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        addLog(`✓ Update permission: SUCCESS`, 'success');
+                    } catch (updateErr) {
+                        addLog(`✗ Update permission: FAILED - ${updateErr.message}`, 'error');
+                        addLog(`   This might cause login issues!`, 'error');
+                    }
+                    
+                    // Determine redirect
+                    let redirectUrl = '';
+                    switch(userData.role) {
+                        case 'student':
+                            redirectUrl = 'student-dashboard.html';
+                            break;
+                        case 'facilitator':
+                            redirectUrl = 'facilitator-dashboard.html';
+                            break;
+                        case 'admin':
+                            redirectUrl = 'admin-dashboard.html';
+                            break;
+                        default:
+                            redirectUrl = 'UNKNOWN - Check role value!';
+                    }
+                    
+                    addLog(`✓ Step 7: Would redirect to: ${redirectUrl}`, 'info');
+                    addLog(``, 'info');
+                    addLog(`🎉 ALL CHECKS PASSED! Google Sign-In should work!`, 'success');
+                    addLog(`   If your login page still shows error, the issue is with the redirect.`, 'info');
+                    addLog(`   Make sure ${redirectUrl} exists in your project.`, 'info');
+                    
+                } else {
+                    addLog(`✗ Step 5: User document NOT FOUND in Firestore!`, 'error');
+                    addLog(`   This means the account was created in Authentication but not in Firestore.`, 'error');
+                    
+                    // Try to create it
+                    addLog('✓ Step 6: Attempting to create user document...', 'info');
+                    try {
+                        const userId = 'STU' + Date.now().toString().slice(-6);
+                        await db.collection('users').doc(user.uid).set({
+                            name: user.displayName || user.email.split('@')[0],
+                            email: user.email,
+                            role: 'student',
+                            userId: userId,
+                            photoURL: user.photoURL || '',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp(),
+                            status: 'active',
+                            phone: '',
+                            bio: ''
+                        });
+                        addLog(`✓ User document created successfully!`, 'success');
+                        addLog(`✓ You can now try logging in again.`, 'success');
+                        
+                        // Try creating student data
+                        try {
+                            await db.collection('students').doc(user.uid).set({
+                                enrolledModules: [],
+                                completedTests: [],
+                                grades: []
+                            });
+                            addLog(`✓ Student data created successfully!`, 'success');
+                        } catch (studentErr) {
+                            addLog(`✗ Could not create student data: ${studentErr.message}`, 'error');
+                        }
+                        
+                        addLog(``, 'info');
+                        addLog(`🎉 Account setup complete! Try logging in now.`, 'success');
+                        
+                    } catch (createErr) {
+                        addLog(`✗ Failed to create user document!`, 'error');
+                        addLog(`   Error: ${createErr.code} - ${createErr.message}`, 'error');
+                        addLog(``, 'error');
+                        addLog(`❌ FIRESTORE RULES ISSUE!`, 'error');
+                        addLog(`   Your Firestore rules are blocking user creation.`, 'error');
+                        addLog(`   Please deploy the rules from firestore.rules file.`, 'error');
+                    }
+                }
+                
+            } catch (error) {
+                addLog(`✗ ERROR occurred during sign-in!`, 'error');
+                addLog(`   Error Code: ${error.code || 'N/A'}`, 'error');
+                addLog(`   Error Message: ${error.message || error.toString()}`, 'error');
+                addLog(``, 'error');
+                
+                // Provide specific solutions
+                if (error.code === 'auth/popup-closed-by-user') {
+                    addLog(`💡 SOLUTION: You closed the popup. Try again and complete the sign-in.`, 'info');
+                } else if (error.code === 'auth/popup-blocked') {
+                    addLog(`💡 SOLUTION: Your browser blocked the popup. Allow popups for this site.`, 'info');
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    addLog(`💡 SOLUTION: Google Sign-In is not enabled in Firebase Console.`, 'info');
+                    addLog(`   Go to Firebase Console → Authentication → Sign-in method → Enable Google`, 'info');
+                } else if (error.message && error.message.includes('permission')) {
+                    addLog(`💡 SOLUTION: Firestore rules are blocking access.`, 'info');
+                    addLog(`   Deploy the rules from firestore.rules file to Firebase Console.`, 'info');
+                } else {
+                    addLog(`💡 Check the error message above and refer to GOOGLE_SIGNIN_FIX.md`, 'info');
+                }
+            }
+        }
+        
+        // Auto-show current auth state
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                addLog(`ℹ️ You are currently signed in as: ${user.email}`, 'info');
+            } else {
+                addLog(`ℹ️ You are not currently signed in.`, 'info');
+            }
+        });
+    </script>
+</body>
+</html>
+
